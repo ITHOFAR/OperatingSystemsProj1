@@ -201,6 +201,14 @@ struct Node* copyList(struct Node* head) {
 
 }
 
+void decIOTime(struct Node** head) {
+    struct Node* curr = *head;
+    while (curr != NULL) {
+        curr->currProc->ioTime -=1;
+        curr = curr->nextProc;
+    }
+}
+
 //Algorithms
 //TODO
 void firstAlgo(struct Node *head, int numOfProcs) {
@@ -210,8 +218,8 @@ void firstAlgo(struct Node *head, int numOfProcs) {
 
     int sysCount = 0;
     int numFinished = 0;
-
-    while (numFinished != numOfProcs && sysCount < 5) { //manually add to ready queue based on count timer
+    //TODO BUILD TEMP READY QUEUE and sort it by CPU ID then add to real ready queue
+    while (numFinished != numOfProcs && sysCount < 10) { //manually add to ready queue based on count timer
 
         struct Node* generatorNode = copyList(head); //used for adding to ready queue
         while (generatorNode != NULL) { //logic for adding to ready queue based on systime/arrival time
@@ -225,44 +233,52 @@ void firstAlgo(struct Node *head, int numOfProcs) {
 
         //TODO SORT BY CPUID
         if (getSize(blockedQueue) != 0) {
-            printf("BLOCKED: DID I RUN?");
-            while (blockedQueue != NULL) { //decreasing all ioTime
-                setIoTime(blockedQueue->currProc, getIoTime(blockedQueue->currProc) - 1);
+            printf("CYCLE in blocked: %d ", sysCount);
+            decIOTime(&blockedQueue); //decs time for all
+            printNodeList(blockedQueue);
 
-                if (getIoTime(blockedQueue->currProc) == 0) { //adding to ready if done
-                    stateChange(blockedQueue->currProc, 1); //moving state to ready
-                    appendNode(&readyQueue, copyProc(blockedQueue->currProc));
-                    deleteKey(&blockedQueue, getID(blockedQueue->currProc)); //moving from ready to blocked
+            struct Node* currBlock = blockedQueue;
+            while (currBlock != NULL) { //decreasing all ioTime
+//                setIoTime(blockedQueue->currProc, getIoTime(blockedQueue->currProc) - 1);
+                if (getIoTime(currBlock->currProc) == 0) { //adding to ready if done
+                    printf("DID I EVER RUN?");
+                    stateChange(currBlock->currProc, 1); //moving state to ready
+                    appendNode(&readyQueue, copyProc(currBlock->currProc));
+                    deleteKey(&blockedQueue, getID(currBlock->currProc)); //moving from ready to blocked
                 }
-//                blockedQueue = blockedQueue->nextProc;
+                currBlock = currBlock->nextProc;
             }
         }//handles blocked Queue checks, dec, and moving
 
         int size  = getSize(readyQueue);
-        printf("SIZE: %d ", size);
-        printNodeList((struct Node **) readyQueue); //TODO TESTING
-        if (getSize(readyQueue) != 0) {
-            int cpuTime = getCpuTime(readyQueue->currProc);
-            int ioTime = getIoTime(readyQueue->currProc);
-            int halfTime = (getCpuTime(readyQueue->currProc) + 1) / 2;
+        printf("CYCLE: %d, SIZE: %d ",sysCount,size);
+        printNodeList(readyQueue); //TODO TESTING
+        int cpuTime = getCpuTime(readyQueue->currProc);
+        int ioTime = getIoTime(readyQueue->currProc);
+        int halfTime = (getCpuTime(readyQueue->currProc) + 1) / 2;
 
-            if (halfTime == 0 && ioTime != 0) { //FIRST HALF TIME DONE
-                printf("FIRST HALF: DID I RUN? ");
-                stateChange(readyQueue->currProc, 2); //moving state to blocked
-                appendNode(&blockedQueue, copyProc(readyQueue->currProc));
-                deleteFirst(&readyQueue); //moving from ready to blocked
+        if (halfTime == 0 && ioTime != 0) { //FIRST HALF TIME DONE
+            stateChange(readyQueue->currProc, 2); //moving state to blocked
+            appendNode(&blockedQueue, copyProc(readyQueue->currProc));
+            deleteFirst(&readyQueue); //moving from ready to blocked
+            sysCount++;
+            continue;
 //                readyQueue = readyQueue->nextProc;
-            }
-            if (cpuTime == 0 && ioTime == 0) { //FINISHED PROCESS
-                printf("SECOND HALF: DID I RUN?");
-                setDone(readyQueue->currProc, 1);
-                appendNode(&finishedQueue, copyProc(readyQueue->currProc));
-                deleteFirst(&readyQueue); //proc is finished
-                numFinished += 1;
+        }
+        if (cpuTime == 0 && ioTime == 0) { //FINISHED PROCESS
+            setDone(readyQueue->currProc, 1);
+            appendNode(&finishedQueue, copyProc(readyQueue->currProc));
+            deleteFirst(&readyQueue); //proc is finished
+            numFinished += 1;
+            sysCount++;
+            continue;
 //                readyQueue = readyQueue->nextProc;
-            }
-
+        }
+        if (halfTime != 0) {
             setCpuTime(readyQueue->currProc, cpuTime - 1);
+        }
+        else {
+//                readyQueue = readyQueue->nextProc;
         }
         sysCount++;
     } //main while loop
