@@ -19,19 +19,52 @@ struct Node {
     struct Process *currProc;
     struct Node *nextProc;
 };
+
+////GETTERS TODO DECIDE IF NEEDED
+//int getID(struct Process *proc) {
+//    return proc->id;
+//}
+//int getCpuTime(struct Process *proc) {
+//    return proc->cpuTime;
+//}
 //
-//void insertFirst(struct Node** head, struct Process *proc) {
+//int getIoTime(struct Process *proc) {
+//    return proc->ioTime;
+//}
 //
-//    struct Node *newProc = (struct Node*) malloc(sizeof(struct Node));
+//int getArrivalTime(struct Process *proc) {
+//    return proc->arrivalTime;
+//}
+////SETTERS
+//void setID(struct Process *proc, int num) {
+//    proc->id = num;
+//}
+//void setCpuTime(struct Process *proc, int num) {
+//    proc->cpuTime = num;
+//}
 //
-//    newProc->currProc = proc;
-//    newProc->nextProc = *head;
-//    *head = newProc;
+//void setIoTime(struct Process *proc, int num) {
+//    proc->ioTime = num;
+//}
+//
+//void setArrivalTime(struct Process *proc, int num) {
+//    proc->arrivalTime = num;
+//}
+//
+//void setDone(struct Process *proc, int num) {
+//    proc->done = num;
+//}
+//
+//void decCpuTime(struct Process *proc) {
+//    proc->cpuTime -=1;
+//}
+//void stateChange(struct Node** head, int newState) {
+//    (*head)->currProc->state = newState;
 //}
 
-int getSize(struct Node** head) {
+int getSize(struct Node* head) {
     int count = 0;
-    struct Node* current = *head;
+    struct Node* current = head;
     while (current != NULL) {
         count++;
         current = current->nextProc;
@@ -39,48 +72,27 @@ int getSize(struct Node** head) {
     return count;
 }
 
-//GETTERS
-int getID(struct Process **proc) {
-    return (*proc)->id;
-}
-int getCpuTime(struct Process **proc) {
-    return (*proc)->cpuTime;
-}
+void insertFirst(struct Node** head, struct Process *proc) {
 
-int getIoTime(struct Process **proc) {
-    return (*proc)->ioTime;
-}
+    struct Node *newNode = (struct Node*) malloc(sizeof(struct Node));
 
-int getArrivalTime(struct Process **proc) {
-    return (*proc)->arrivalTime;
-}
-//SETTERS
-void setID(struct Process **proc, int num) {
-    (*proc)->id = num;
-}
-void setCpuTime(struct Process **proc, int num) {
-    (*proc)->cpuTime = num;
-}
+    struct Process* newProc = (struct Process*) malloc(sizeof(struct Process));
+    newProc->id = proc->id;
+    newProc->cpuTime = proc->cpuTime;
+    newProc->ioTime = proc->ioTime;
+    newProc->arrivalTime = proc->arrivalTime;
+    newProc->state = proc->state;
 
-void setIoTime(struct Process **proc, int num) {
-    (*proc)->ioTime = num;
-}
-
-void setArrivalTime(struct Process **proc, int num) {
-    (*proc)->arrivalTime = num;
-}
-
-void setDone(struct Process **proc, int num) {
-    (*proc)->done = num;
-}
-
-void decCpuTime(struct Process **proc) {
-    (*proc)->cpuTime -=1;
+    newNode->currProc = proc;
+    newNode->nextProc = *head;
+    *head = newNode;
 }
 
 void appendNode(struct Node** head, struct Process *proc) {
 
     struct Node *newNode = (struct Node*) malloc(sizeof(struct Node));
+    struct Node *end = *head;
+
     struct Process* newProc = (struct Process*) malloc(sizeof(struct Process));
     newProc->id = proc->id;
     newProc->cpuTime = proc->cpuTime;
@@ -88,6 +100,7 @@ void appendNode(struct Node** head, struct Process *proc) {
     newProc->arrivalTime = proc->arrivalTime;
     newProc->state = proc->state;
     newProc->done = proc->done;
+
     newNode->currProc = newProc;
     newNode->nextProc = NULL;
 
@@ -96,7 +109,6 @@ void appendNode(struct Node** head, struct Process *proc) {
         return;
     }
     else {
-        struct Node *end = *head;
         while (end->nextProc != NULL) {
             end = end->nextProc;
         }
@@ -105,7 +117,7 @@ void appendNode(struct Node** head, struct Process *proc) {
 }
 
 void deleteFirst(struct Node** head) {
-    if (head == NULL) {
+    if (*head == NULL) {
         return;
     }
     struct Node* temp = *head;
@@ -134,15 +146,17 @@ void deleteKey(struct Node** head, int cpuID) {
     free(temp);
 }
 
-struct Process* findID(struct Node **head, int cpuID) {
-    struct Node *current = *head;
+struct Process* findID(struct Node *head, int cpuID) {
+    struct Node *current = head;
 
-    if (*head == NULL) {
+    if (head == NULL) {
+        printf("Could not be found");
         return NULL;
     }
 
-    while(current->currProc->id != cpuID) {
+    while(current->currProc->id != cpuID && current != NULL) {
         if (current->nextProc == NULL) {
+            printf("Could not be found");
             return NULL;
         } else {
             current = current->nextProc;
@@ -150,9 +164,10 @@ struct Process* findID(struct Node **head, int cpuID) {
     }
     return current->currProc;
 }
+//TODO: DECIDE TO KEEP OR DELETE: not working well
 
-void printNodeList(struct Node **head) { //
-    struct Node *currNode = *head;
+void printNodeList(struct Node *head) {
+    struct Node *currNode = head;
     while(currNode != NULL) {
         struct Process *cp = currNode->currProc;
         printf("ID: %d, CPU Time: %d, I/O Time: %d, Arrival Time: %d, State: %d | ",
@@ -160,10 +175,6 @@ void printNodeList(struct Node **head) { //
         currNode = currNode->nextProc;
     }
     printf("\n");
-}
-
-void stateChange(struct Node** head, int newState) {
-    (*head)->currProc->state = newState;
 }
 
 struct Process* copyProc(struct Process* proc) {
@@ -192,69 +203,69 @@ struct Node* copyList(struct Node* head) {
 
 //Algorithms
 //TODO
-void firstAlgo(struct Node **head, int numOfProcs) {
-    struct Node* readyQueue = (struct Node*) malloc(sizeof(struct Node));
-    struct Node* blockedQueue = (struct Node*) malloc(sizeof(struct Node));
-    struct Node* finishedQueue = (struct Node*) malloc(sizeof(struct Node));
-
-    int sysCount = 0;
-    int numFinished = 0;
-
-    while (numFinished != numOfProcs) { //manually add to ready queue based on count timer
-        struct Node* generatorNode = copyList(*head); //used for adding to ready queue
-        while (generatorNode != NULL) { //logic for adding to ready queue based on systime/arrival time
-            if (generatorNode->currProc->arrivalTime == sysCount) {
-                appendNode((struct Node **) readyQueue, generatorNode->currProc);
-            }
-            generatorNode = generatorNode->nextProc;
-        } //ready queue formed from original list
-        free(generatorNode); //no longer needed
-        printNodeList((struct Node **) readyQueue); //TODO TESTING
-
-        stateChange((struct Node**) readyQueue, 0); //set to running
-        //TODO SORT BY CPUID
-        if (getSize((struct Node **) blockedQueue) != 0) {
-            printf("BLOCKED: DID I RUN?");
-            while (blockedQueue != NULL) { //decreasing all ioTime
-                setIoTime((struct Process **) blockedQueue->currProc, getIoTime((struct Process **) blockedQueue->currProc) - 1);
-
-                if (getIoTime((struct Process **) blockedQueue->currProc) == 0) { //adding to ready if done
-                    stateChange((struct Node **) blockedQueue, 1); //moving state to ready
-                    appendNode((struct Node **) readyQueue, copyProc(blockedQueue->currProc));
-                    deleteKey((struct Node **) blockedQueue, getID((struct Process **) blockedQueue->currProc)); //moving from ready to blocked
-                }
-                blockedQueue = blockedQueue->nextProc;
-            }
-        }//handles blocked Queue checks, dec, and moving
-
-        int size  = getSize((struct Node **) readyQueue);
-        printf("SIZE: %d", size);
-        if (getSize((struct Node **) readyQueue) != 0) {
-            int cpuTime = getCpuTime((struct Process **) readyQueue->currProc);
-            int ioTime = getIoTime((struct Process **) readyQueue->currProc);
-            int halfTime = (getCpuTime((struct Process **) readyQueue->currProc) + 1) / 2;
-
-            if (halfTime == 0 && ioTime != 0) { //FIRST HALF TIME DONE
-                printf("FIRST HALF: DID I RUN? ");
-                stateChange((struct Node **) readyQueue, 2); //moving state to blocked
-                appendNode((struct Node **) blockedQueue, copyProc(readyQueue->currProc));
-                deleteFirst((struct Node **) readyQueue); //moving from ready to blocked
-                readyQueue = readyQueue->nextProc;
-            }
-            if (cpuTime == 0 && ioTime == 0) { //FINISHED PROCESS
-                printf("SECOND HALF: DID I RUN?");
-                setDone((struct Process **) readyQueue->currProc, 1);
-                appendNode((struct Node **) finishedQueue, copyProc(readyQueue->currProc));
-                deleteFirst((struct Node **) readyQueue); //proc is finished
-                numFinished += 1;
-                readyQueue = readyQueue->nextProc;
-            }
-
-            setCpuTime((struct Process **) readyQueue->currProc, cpuTime - 1);
-        }
-        sysCount++;
-    } //main while loop
-}
+//void firstAlgo(struct Node **head, int numOfProcs) {
+//    struct Node* readyQueue = (struct Node*) malloc(sizeof(struct Node));
+//    struct Node* blockedQueue = (struct Node*) malloc(sizeof(struct Node));
+//    struct Node* finishedQueue = (struct Node*) malloc(sizeof(struct Node));
+//
+//    int sysCount = 0;
+//    int numFinished = 0;
+//
+//    while (numFinished != numOfProcs) { //manually add to ready queue based on count timer
+//        struct Node* generatorNode = copyList(*head); //used for adding to ready queue
+//        while (generatorNode != NULL) { //logic for adding to ready queue based on systime/arrival time
+//            if (generatorNode->currProc->arrivalTime == sysCount) {
+//                appendNode((struct Node **) readyQueue, generatorNode->currProc);
+//            }
+//            generatorNode = generatorNode->nextProc;
+//        } //ready queue formed from original list
+//        free(generatorNode); //no longer needed
+//
+//        stateChange((struct Node**) readyQueue, 0); //set to running
+//        //TODO SORT BY CPUID
+//        if (getSize(blockedQueue) != 0) {
+//            printf("BLOCKED: DID I RUN?");
+//            while (blockedQueue != NULL) { //decreasing all ioTime
+//                setIoTime((struct Process **) blockedQueue->currProc, getIoTime((struct Process **) blockedQueue->currProc) - 1);
+//
+//                if (getIoTime((struct Process **) blockedQueue->currProc) == 0) { //adding to ready if done
+//                    stateChange((struct Node **) blockedQueue, 1); //moving state to ready
+//                    appendNode((struct Node **) readyQueue, copyProc(blockedQueue->currProc));
+//                    deleteKey((struct Node **) blockedQueue, getID((struct Process **) blockedQueue->currProc)); //moving from ready to blocked
+//                }
+//                blockedQueue = blockedQueue->nextProc;
+//            }
+//        }//handles blocked Queue checks, dec, and moving
+//
+//        int size  = getSize(readyQueue);
+//        printf("SIZE: %d ", size);
+////        printNodeList((struct Node **) readyQueue); //TODO TESTING
+//        if (getSize(readyQueue) != 0) {
+//            int cpuTime = getCpuTime((struct Process **) readyQueue->currProc);
+//            int ioTime = getIoTime((struct Process **) readyQueue->currProc);
+//            int halfTime = (getCpuTime((struct Process **) readyQueue->currProc) + 1) / 2;
+//
+//            if (halfTime == 0 && ioTime != 0) { //FIRST HALF TIME DONE
+//                printf("FIRST HALF: DID I RUN? ");
+//                stateChange((struct Node **) readyQueue, 2); //moving state to blocked
+//                appendNode((struct Node **) blockedQueue, copyProc(readyQueue->currProc));
+//                deleteFirst((struct Node **) readyQueue); //moving from ready to blocked
+//                readyQueue = readyQueue->nextProc;
+//            }
+//            if (cpuTime == 0 && ioTime == 0) { //FINISHED PROCESS
+//                printf("SECOND HALF: DID I RUN?");
+//                setDone((struct Process **) readyQueue->currProc, 1);
+//                appendNode((struct Node **) finishedQueue, copyProc(readyQueue->currProc));
+//                deleteFirst((struct Node **) readyQueue); //proc is finished
+//                numFinished += 1;
+//                readyQueue = readyQueue->nextProc;
+//            }
+//
+//            setCpuTime((struct Process **) readyQueue->currProc, cpuTime - 1);
+//        }
+//        sysCount++;
+//    } //main while loop
+//}
 
 void roundAlgo() {
 
@@ -295,7 +306,7 @@ int main(int argc, char *argv[]){
     numofProc = currentLine[0] - '0';
 
     //Generating our Procs and our list of Procs;
-   struct Node *listOfProcs = (struct Node*) malloc(sizeof(struct Node));
+   struct Node *listOfProcs = NULL;
    while(fgets(currentLine, 100, fp) != NULL) {
         int procInfo[4];
         for (int i = 0; i < 4; i++) {
@@ -310,12 +321,17 @@ int main(int argc, char *argv[]){
         current->state = 1;
         current->done = 0;
 
-        appendNode((struct Node **) listOfProcs, current); //adding to end of list
+        appendNode(&listOfProcs, current); //adding to end of list
    }
+    //TODO TESTING AREA
+//    printNodeList(listOfProcs);
+//    deleteKey(&listOfProcs, 0);
+//    printNodeList(listOfProcs);
 
    switch(scheduling) {
         case 0:
-            firstAlgo((struct Node **) listOfProcs, numofProc);
+
+//            firstAlgo(&listOfProcs, numofProc);
             break;
         case 1:
             roundAlgo();
