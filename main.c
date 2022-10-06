@@ -201,8 +201,8 @@ struct Node* copyList(struct Node* head) {
 
 }
 
-void decIOTime(struct Node** head) {
-    struct Node* curr = *head;
+void decIOTime(struct Node* head) {
+    struct Node* curr = head;
     while (curr != NULL) {
         curr->currProc->ioTime -=1;
         curr = curr->nextProc;
@@ -233,15 +233,12 @@ void firstAlgo(struct Node *head, int numOfProcs) {
 
         //TODO SORT BY CPUID
         if (getSize(blockedQueue) != 0) {
-            printf("CYCLE in blocked: %d ", sysCount);
-            decIOTime(&blockedQueue); //decs time for all
-            printNodeList(blockedQueue);
+            decIOTime(blockedQueue); //decs time for all
 
-            struct Node* currBlock = blockedQueue;
+            struct Node* currBlock = copyList(blockedQueue);
             while (currBlock != NULL) { //decreasing all ioTime
 //                setIoTime(blockedQueue->currProc, getIoTime(blockedQueue->currProc) - 1);
-                if (getIoTime(currBlock->currProc) == 0) { //adding to ready if done
-                    printf("DID I EVER RUN?");
+                if (currBlock->currProc->ioTime == 0) { //adding to ready if done
                     stateChange(currBlock->currProc, 1); //moving state to ready
                     appendNode(&readyQueue, copyProc(currBlock->currProc));
                     deleteKey(&blockedQueue, getID(currBlock->currProc)); //moving from ready to blocked
@@ -251,11 +248,20 @@ void firstAlgo(struct Node *head, int numOfProcs) {
         }//handles blocked Queue checks, dec, and moving
 
         int size  = getSize(readyQueue);
-        printf("CYCLE: %d, SIZE: %d ",sysCount,size);
-        printNodeList(readyQueue); //TODO TESTING
         int cpuTime = getCpuTime(readyQueue->currProc);
         int ioTime = getIoTime(readyQueue->currProc);
-        int halfTime = (getCpuTime(readyQueue->currProc) + 1) / 2;
+        int halfTime = (int) (cpuTime *.5);
+        printf("_____________________________ \n");
+
+        printf("CYCLE: %d \n", sysCount);
+        printf("READY QUEUE: ");
+        printNodeList(readyQueue);
+        printf("\nBLOCKED QUEUE: ");
+        printNodeList(blockedQueue);
+        printf("\nFINISHED QUEUE: ");
+        printNodeList(finishedQueue);
+        printf("HALFTIME: %d \n", halfTime);
+
 
         if (halfTime == 0 && ioTime != 0) { //FIRST HALF TIME DONE
             stateChange(readyQueue->currProc, 2); //moving state to blocked
@@ -274,12 +280,7 @@ void firstAlgo(struct Node *head, int numOfProcs) {
             continue;
 //                readyQueue = readyQueue->nextProc;
         }
-        if (halfTime != 0) {
-            setCpuTime(readyQueue->currProc, cpuTime - 1);
-        }
-        else {
-//                readyQueue = readyQueue->nextProc;
-        }
+        setCpuTime(readyQueue->currProc, cpuTime - 1);
         sysCount++;
     } //main while loop
 }
