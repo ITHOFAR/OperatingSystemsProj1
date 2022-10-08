@@ -51,6 +51,7 @@ struct Node* copyList(struct Node* head) {
 int getID(struct Process *proc) {
     return proc->id;
 }
+
 int getCpuTime(struct Process *proc) {
     return proc->cpuTime;
 }
@@ -70,6 +71,7 @@ int getArrivalTime(struct Process *proc) {
 void setID(struct Process *proc, int num) {
     proc->id = num;
 }
+
 void setCpuTime(struct Process *proc, int num) {
     proc->cpuTime = num;
 }
@@ -234,6 +236,7 @@ char* getState(struct Process* proc) {
     } while (swapped);
 }
 
+//TODO REMOVE
 void productionPrint(struct Node *head) {
     sort(head);
     struct Node *currNode = head;
@@ -245,6 +248,7 @@ void productionPrint(struct Node *head) {
     printf(" \n");
 }
 
+//TODO REMOVE AFTER TESTING
 void printNodeList(struct Node *head) {
     struct Node *currNode = head;
     while(currNode != NULL) {
@@ -257,6 +261,7 @@ void printNodeList(struct Node *head) {
     printf(" \n");
 }
 
+//TODO REMOVE
 void printTurnaround(struct Node* head) {
     struct Node *currNode = head;
     while(currNode != NULL) {
@@ -281,17 +286,46 @@ void updatePrinter(struct Node** print, struct Node* ready, struct Node* blocked
     free(blockedPrinter);
 }
 
+char* productionPrintString(struct Node *head) {
+    sort(head);
+    struct Node *currNode = head;
+    char *output = malloc(50);
+    while(currNode != NULL) {
+        struct Process *cp = currNode->currProc;
+        char currLine[20];
+        sprintf(currLine, "%d: %s ", cp->id, getState(cp));
+        strcat(output, currLine);
+        currNode = currNode->nextProc;
+    }
+    strcat(output," \n");
+    return output;
+}
+
+char* printTurnaroundString(struct Node* head) {
+    struct Node *currNode = head;
+    char* output = malloc(100);
+    while(currNode != NULL) {
+        char currLine[30];
+        struct Process *cp = currNode->currProc;
+        sprintf(currLine, "Turnaround Process %d: %d\n", cp->id, cp->finishTime - cp->arrivalTime + 1);
+        strcat(output, currLine);
+        currNode = currNode->nextProc;
+    }
+    return output;
+}
+
 //Algorithms
-void firstAlgo(struct Node *head, int numOfProcs) {
+//TODO ADD STRING BUILDER FOR OUTPUT
+char* firstAlgo(struct Node *head, int numOfProcs) {
     struct Node* readyQueue = NULL;
     struct Node* blockedQueue = NULL;
     struct Node* finishedQueue = NULL;
     struct Node* tempReady = NULL;
+    char *outputString = malloc(1000);
 
     int sysCount = 0;
     int numFinished = 0;
     int timeIdle = 0;
-    //TODO ADD PRINTING SYSTEM
     while (numFinished != numOfProcs) { //manually add to ready queue based on count timer
         struct Node* printList = NULL;
         struct Node* generatorNode = copyList(head); //used for adding to ready queue
@@ -358,22 +392,35 @@ void firstAlgo(struct Node *head, int numOfProcs) {
             else {
                 setHalfTime(readyQueue->currProc, ((int) (getCpuTime(readyQueue->currProc) * .5)) - 1);
             }
-            printf("%d ", sysCount); //printing cycle
+            //TODO PRINTING
+            char sysCountString[10];
+            sprintf(sysCountString, "%d ", sysCount);
+            strcat(outputString, sysCountString);
             updatePrinter(&printList, readyQueue, blockedQueue);
-            productionPrint(printList);
+            strcat(outputString, productionPrintString(printList));
             sysCount++;
             continue;
         }
-        printf("%d ", sysCount); //printing cycle
+        //TODO PRINTING
+        char sysCountString[10];
+        sprintf(sysCountString, "%d ", sysCount);
+        strcat(outputString, sysCountString);
         updatePrinter(&printList, readyQueue, blockedQueue);
-        productionPrint(printList);
+        strcat(outputString, productionPrintString(printList));
+
         setHalfTime(readyQueue->currProc, readyQueue->currProc->halfTime - 1);
         sysCount++;
     } //main while loop
-    printf("\nFinishing Time: %d\n", sysCount -1);
-    float util = 1 - ((float) timeIdle/sysCount);
-    printf("CPU utilization: %.2f\n", util);
-    printTurnaround(finishedQueue);
+    //TODO PRINTING
+    char finishString[20];
+    sprintf(finishString, "\nFinishing Time: %d\n", sysCount -1);
+    strcat(outputString, finishString);
+    float util = 1 - ((float) timeIdle/(float)sysCount);
+    char utilString[30];
+    sprintf(utilString, "CPU utilization: %.2f\n", util);
+    strcat(outputString, utilString);
+    strcat(outputString, printTurnaroundString(finishedQueue));
+    return outputString;
 }
 
 void roundAlgo() {
@@ -434,9 +481,10 @@ int main(int argc, char *argv[]){
         appendNode(&listOfProcs, current); //adding to end of list
    }
 
+   char* outputString = malloc(1000);
    switch(scheduling) {
         case 0:
-            firstAlgo(listOfProcs, numofProc);
+            outputString = firstAlgo(listOfProcs, numofProc);
             break;
         case 1:
             roundAlgo();
@@ -452,9 +500,14 @@ int main(int argc, char *argv[]){
 
 // form the output file name
     sprintf(filename,"%d-%s",scheduling, argv[2]);
+//print to file
+    FILE* output = fopen(filename, "w");
+    fputs(outputString, output);
+
 
 // close the processes file
     fclose(fp);
+    fclose(output);
 
     return 0;
 }
