@@ -372,48 +372,52 @@ char* firstAlgo(struct Node *head, int numOfProcs) {
             free(tempCur);
         }
 
-        stateChange(readyQueue->currProc, 0); //set to running
+        if (readyQueue != NULL) {
+            stateChange(readyQueue->currProc, 0); //set to running
 
-        if (getHalfTime(readyQueue->currProc) == 0) {
-            if (readyQueue->nextProc != NULL) {
-                readyQueue->nextProc->currProc->state = 0;
-            }
-
-            if (getIoTime(readyQueue->currProc) == 0) { //FINISHED PROC
-                setDone(readyQueue->currProc, 1);
-                readyQueue->currProc->finishTime = sysCount -1;
-                appendNode(&finishedQueue, copyProc(readyQueue->currProc));
-                deleteFirst(&readyQueue); //proc is finished
-                numFinished += 1;
-                if (numFinished == numOfProcs) {
-                    break;
+            if (getHalfTime(readyQueue->currProc) == 0) {
+                if (readyQueue->nextProc != NULL) {
+                    readyQueue->nextProc->currProc->state = 0;
                 }
-            }
 
-            if (readyQueue != NULL) {
-                if (getIoTime(readyQueue->currProc) != 0 &&
-                    getHalfTime(readyQueue->currProc) == 0) { //FIRST HALF TIME DONE: MOVE TO BLOCKED
-                    setHalfTime(readyQueue->currProc, ((int) (getCpuTime(readyQueue->currProc) * .5)));
-                    stateChange(readyQueue->currProc, 2); //moving state to blocked
-                    appendNode(&blockedQueue, copyProc(readyQueue->currProc));
-                    deleteFirst(&readyQueue); //moving from ready to blocked
+                if (getIoTime(readyQueue->currProc) == 0) { //FINISHED PROC
+                    setDone(readyQueue->currProc, 1);
+                    readyQueue->currProc->finishTime = sysCount - 1;
+                    appendNode(&finishedQueue, copyProc(readyQueue->currProc));
+                    deleteFirst(&readyQueue); //proc is finished
+                    numFinished += 1;
+                    if (numFinished == numOfProcs) {
+                        break;
+                    }
                 }
-            }
 
-            if (readyQueue == NULL){ //if no more ready, then idle time
-                timeIdle++;
+                if (readyQueue != NULL) {
+                    if (getIoTime(readyQueue->currProc) != 0 && getHalfTime(readyQueue->currProc) == 0) { //FIRST HALF TIME DONE: MOVE TO BLOCKED
+                        setHalfTime(readyQueue->currProc, ((int) (getCpuTime(readyQueue->currProc) * .5)));
+                        stateChange(readyQueue->currProc, 2); //moving state to blocked
+                        appendNode(&blockedQueue, copyProc(readyQueue->currProc));
+                        deleteFirst(&readyQueue); //moving from ready to blocked
+                    }
+                }
+
+                if (readyQueue == NULL) { //if no more ready, then idle time
+                    timeIdle++;
+                } else {
+                    stateChange(readyQueue->currProc, 0); //set to running
+                    setHalfTime(readyQueue->currProc, getHalfTime(readyQueue->currProc) - 1);
+                }
+                char sysCountString[10];
+                sprintf(sysCountString, "%d ", sysCount);
+                strcat(outputString, sysCountString);
+                updatePrinter(&printList, readyQueue, blockedQueue);
+                strcat(outputString, productionPrintString(printList));
+                sysCount++;
+                continue;
             }
-            else {
-                stateChange(readyQueue->currProc, 0); //set to running
-                setHalfTime(readyQueue->currProc, getHalfTime(readyQueue->currProc) - 1);
-            }
-            char sysCountString[10];
-            sprintf(sysCountString, "%d ", sysCount);
-            strcat(outputString, sysCountString);
-            updatePrinter(&printList, readyQueue, blockedQueue);
-            strcat(outputString, productionPrintString(printList));
-            sysCount++;
-            continue;
+            setHalfTime(readyQueue->currProc, readyQueue->currProc->halfTime - 1);
+        }
+        if (readyQueue == NULL) { //if no more ready, then idle time
+            timeIdle++;
         }
 
         char sysCountString[10];
@@ -421,18 +425,17 @@ char* firstAlgo(struct Node *head, int numOfProcs) {
         strcat(outputString, sysCountString);
         updatePrinter(&printList, readyQueue, blockedQueue);
         strcat(outputString, productionPrintString(printList));
-
-        setHalfTime(readyQueue->currProc, readyQueue->currProc->halfTime - 1);
         sysCount++;
     } //main while loop
 
     char finishString[25];
-    sprintf(finishString, "\nFinishing Time: %d\n", sysCount -1);
+    sprintf(finishString, "\nFinishing Time: %d\n", sysCount-1);
     strcat(outputString, finishString);
     float util = 1 - ((float) timeIdle/(float)sysCount);
     char utilString[30];
     sprintf(utilString, "CPU utilization: %.2f\n", util);
     strcat(outputString, utilString);
+    sort(finishedQueue);
     strcat(outputString, printTurnaroundString(finishedQueue));
     return outputString;
 }
@@ -472,7 +475,6 @@ char* roundAlgo(struct Node *head, int numOfProcs) {
             free(currBlock);
         }//handles blocked Queue checks, dec, and moving
 
-        //TODO HANDLE QUANTUM 2
         if (readyQueue != NULL) {
             if (getTimeRun(readyQueue->currProc) == 2 && readyQueue->currProc->halfTime != 0) {
                 setTimeRun(readyQueue->currProc, 0);
@@ -493,51 +495,56 @@ char* roundAlgo(struct Node *head, int numOfProcs) {
             free(tempCur);
         }
 
-        stateChange(readyQueue->currProc, 0); //set to running
+        if (readyQueue != NULL) {
+            stateChange(readyQueue->currProc, 0); //set to running
 
-        if (getHalfTime(readyQueue->currProc) == 0) {
-            if (readyQueue->nextProc != NULL) {
-                readyQueue->nextProc->currProc->state = 0;
-            }
-
-            if (getIoTime(readyQueue->currProc) == 0) { //FINISHED PROC
-                setDone(readyQueue->currProc, 1);
-                readyQueue->currProc->finishTime = sysCount -1;
-                appendNode(&finishedQueue, copyProc(readyQueue->currProc));
-                deleteFirst(&readyQueue); //proc is finished
-                numFinished += 1;
-                if (numFinished == numOfProcs) {
-                    break;
+            if (getHalfTime(readyQueue->currProc) == 0) {
+                if (readyQueue->nextProc != NULL) {
+                    readyQueue->nextProc->currProc->state = 0;
                 }
-            }
 
-            if (readyQueue != NULL) {
-                if (getIoTime(readyQueue->currProc) != 0 &&
-                    getHalfTime(readyQueue->currProc) == 0) { //FIRST HALF TIME DONE: MOVE TO BLOCKED
-                    setTimeRun(readyQueue->currProc, 0);
-                    setHalfTime(readyQueue->currProc, ((int) (getCpuTime(readyQueue->currProc) * .5)));
-                    stateChange(readyQueue->currProc, 2); //moving state to blocked
-                    appendNode(&blockedQueue, copyProc(readyQueue->currProc));
-                    deleteFirst(&readyQueue); //moving from ready to blocked
+                if (getIoTime(readyQueue->currProc) == 0) { //FINISHED PROC
+                    setDone(readyQueue->currProc, 1);
+                    readyQueue->currProc->finishTime = sysCount - 1;
+                    appendNode(&finishedQueue, copyProc(readyQueue->currProc));
+                    deleteFirst(&readyQueue); //proc is finished
+                    numFinished += 1;
+                    if (numFinished == numOfProcs) {
+                        break;
+                    }
                 }
-            }
 
-            if (readyQueue == NULL){ //if no more ready, then idle time
-                timeIdle++;
-            }
-            else {
-                stateChange(readyQueue->currProc, 0); //set to running
-                setTimeRun(readyQueue->currProc, getTimeRun(readyQueue->currProc) + 1);
-                setHalfTime(readyQueue->currProc, getHalfTime(readyQueue->currProc) - 1);
-            }
-            char sysCountString[10];
-            sprintf(sysCountString, "%d ", sysCount);
-            strcat(outputString, sysCountString);
-            updatePrinter(&printList, readyQueue, blockedQueue);
-            strcat(outputString, productionPrintString(printList));
+                if (readyQueue != NULL) {
+                    if (getIoTime(readyQueue->currProc) != 0 && getHalfTime(readyQueue->currProc) == 0) { //FIRST HALF TIME DONE: MOVE TO BLOCKED
+                        setTimeRun(readyQueue->currProc, 0);
+                        setHalfTime(readyQueue->currProc, ((int) (getCpuTime(readyQueue->currProc) * .5)));
+                        stateChange(readyQueue->currProc, 2); //moving state to blocked
+                        appendNode(&blockedQueue, copyProc(readyQueue->currProc));
+                        deleteFirst(&readyQueue); //moving from ready to blocked
+                    }
+                }
 
-            sysCount++;
-            continue;
+                if (readyQueue == NULL) { //if no more ready, then idle time
+                    timeIdle++;
+                } else {
+                    stateChange(readyQueue->currProc, 0); //set to running
+                    setTimeRun(readyQueue->currProc, getTimeRun(readyQueue->currProc) + 1);
+                    setHalfTime(readyQueue->currProc, getHalfTime(readyQueue->currProc) - 1);
+                }
+                char sysCountString[10];
+                sprintf(sysCountString, "%d ", sysCount);
+                strcat(outputString, sysCountString);
+                updatePrinter(&printList, readyQueue, blockedQueue);
+                strcat(outputString, productionPrintString(printList));
+
+                sysCount++;
+                continue;
+            }
+            setTimeRun(readyQueue->currProc, getTimeRun(readyQueue->currProc) + 1);
+            setHalfTime(readyQueue->currProc, readyQueue->currProc->halfTime - 1);
+        }
+        if (readyQueue == NULL) { //if no more ready, then idle time
+            timeIdle++;
         }
 
         char sysCountString[10];
@@ -546,18 +553,17 @@ char* roundAlgo(struct Node *head, int numOfProcs) {
         updatePrinter(&printList, readyQueue, blockedQueue);
         strcat(outputString, productionPrintString(printList));
 
-        setTimeRun(readyQueue->currProc, getTimeRun(readyQueue->currProc) + 1);
-        setHalfTime(readyQueue->currProc, readyQueue->currProc->halfTime - 1);
         sysCount++;
     } //main while loop
 
     char finishString[25];
-    sprintf(finishString, "\nFinishing Time: %d\n", sysCount -1);
+    sprintf(finishString, "\nFinishing Time: %d\n", sysCount-1);
     strcat(outputString, finishString);
     float util = 1 - ((float) timeIdle/(float)sysCount);
     char utilString[30];
     sprintf(utilString, "CPU utilization: %.2f\n", util);
     strcat(outputString, utilString);
+    sort(finishedQueue);
     strcat(outputString, printTurnaroundString(finishedQueue));
     return outputString;
 }
