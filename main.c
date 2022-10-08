@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 //Code of Isaac Harris: ith5263
+//The C compiler identification is AppleClang 14.0.0.14000029
 
 struct Process {
     int id;
